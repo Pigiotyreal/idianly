@@ -59,7 +59,26 @@ app.get("/app", (req, res) => {
 
 app.post('/signup', async (req, res) => {
   const { username, email, password } = req.body;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const uppercaseRegex = /[A-Z]/;
+  const numberRegex = /[0-9]/;
+  const usernameRegex = /^[a-zA-Z0-9_-]{3,32}$/
   const saltRounds = 10;
+
+  if(!usernameRegex.test(username)) {
+    res.send("Username is invalid, must be 3-32 characters in length")
+    return
+  }
+
+  if(!emailRegex.test(email) || email.length < 8 || email.length > 50) {
+    res.send("Email is invalid, email must be 8-50 characters")
+    return
+  }
+
+  if(!uppercaseRegex.test(password) || !numberRegex.test(password) || password.length < 6 || password.length > 72) {
+    res.send("Password is invalid, you need at least one uppercase letter and one number, and must be 6-72 characters")
+    return
+  }
 
   try {
     const salt = await bcrypt.genSalt(saltRounds);
