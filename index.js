@@ -59,63 +59,81 @@ app.get("/app", (req, res) => {
 
 app.post('/signup', async (req, res) => {
   const { username, email, password } = req.body;
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const uppercaseRegex = /[A-Z]/;
-  const numberRegex = /[0-9]/;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  const uppercaseRegex = /[A-Z]/
+  const numberRegex = /[0-9]/
   const usernameRegex = /^[a-zA-Z0-9_-]{3,32}$/
-  const saltRounds = 10;
+  const errors = []
+  const saltRounds = 10
 
   if(!usernameRegex.test(username)) {
-    res.send("Username is invalid, must be 3-32 characters in length")
-    return
+    errors.push("Username is invalid, must be 3-32 characters in length and can only use letters, numbers, hypens, and underscores")
   }
 
   if(!emailRegex.test(email) || email.length < 8 || email.length > 50) {
-    res.send("Email is invalid, email must be 8-50 characters")
-    return
+    errors.push("Email is invalid, must be 8-50 characters in length")
   }
 
   if(!uppercaseRegex.test(password) || !numberRegex.test(password) || password.length < 6 || password.length > 72) {
-    res.send("Password is invalid, you need at least one uppercase letter and one number, and must be 6-72 characters")
-    return
+    errors.push("Password is invalid, you need at least one uppercase letter and one number")
   }
 
-  try {
-    const salt = await bcrypt.genSalt(saltRounds);
-    const hashedPassword = await bcrypt.hash(password, salt);
+  if(errors.length > 0) {
+    res.render("signup", {errors})
+  } else {
+    try {
+        const salt = await bcrypt.genSalt(saltRounds);
+        const hashedPassword = await bcrypt.hash(password, salt);
+    
+        await db.run('INSERT INTO users (username, email, password) VALUES (?, ?, ?)', [username, email, hashedPassword]);
+    
+        res.send('User created successfully');
+      } catch (error) {
+        console.error('Error hashing password:', error);
+        errors.push("Error hasing password")
 
-    await db.run('INSERT INTO users (username, email, password) VALUES (?, ?, ?)', [username, email, hashedPassword]);
-
-    res.send('User created successfully');
-  } catch (error) {
-    console.error('Error hashing password:', error);
-    res.status(500).send('Internal server error');
+        if(errors.length > 0) {
+            res.render("signup", {errors})
+        }
+    }
   }
 });
 
 app.post("/", async (req, res) => {
   const { email, password } = req.body;
+  const errors = []
 
   try {
     const user = await db.get("SELECT * FROM users WHERE email = ?", [email]);
 
     if (!user) {
-      res.status(401).send("Incorrect email or password");
-      return;
+      errors.push("Incorrect email or password");
+      if(errors.length > 0) {
+        res.render("signup", {errors})
+      }
     }
 
-    const passMatch = await bcrypt.compare(password, user.password);
+    if(errors.length > 0) {
+        res.render("signup", {errors})
+    } else {
+        const passMatch = await bcrypt.compare(password, user.password);
 
-    if (!passMatch) {
-      res.status(401).send("Incorrect email or password");
-      return;
+        if (!passMatch) {
+            errors.push("Incorrect email or password");
+            if(errors.length > 0) {
+                res.render("signup", {errors})
+            }
+        }
+
+        req.session.username = user.username;
+        res.redirect("/app");
     }
-
-    req.session.username = user.username;
-    res.redirect("/app");
   } catch (err) {
     console.error(err.message);
-    res.status(500).send("Internal server error");
+    errors.push("Email or password is not valid");
+    if(errors.length > 0) {
+        res.render("signup", {errors})
+    }
   }
 });
 

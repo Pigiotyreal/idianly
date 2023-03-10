@@ -14,6 +14,15 @@
                 <div class="col-lg-4 col-md-6 col-sm-8">
                     <form class="p-4 p-0 shadow-lg bg-dark rounded" method="POST">
                         <h3 class="text-center mb-4">Signup</h3>
+                        <% if(typeof errors !== 'undefined' && errors.length > 0) { %>
+                            <div class="alert alert-danger" role="alert">
+                                <ul>
+                                    <% errors.forEach(function(error) { %>
+                                        <li><%= error %></li>
+                                    <% }); %>
+                                </ul>
+                            </div>
+                        <% } %>
                         <div class="form-floating mb-3">
                             <input type="username" class="form-control" id="username" name="username" placeholder="Username">
                             <label for="username" class="text-dark">Username</label>
