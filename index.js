@@ -89,7 +89,6 @@ app.post('/signup', async (req, res) => {
     
         res.send('User created successfully');
       } catch (error) {
-        console.error('Error hashing password:', error);
         errors.push("Error hasing password")
 
         if(errors.length > 0) {
@@ -129,7 +128,6 @@ app.post("/", async (req, res) => {
         res.redirect("/app");
     }
   } catch (err) {
-    console.error(err.message);
     errors.push("Email or password is not valid");
     if(errors.length > 0) {
         res.render("index", {errors})
