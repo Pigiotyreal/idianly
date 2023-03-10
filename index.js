@@ -109,19 +109,19 @@ app.post("/", async (req, res) => {
     if (!user) {
       errors.push("Incorrect email or password");
       if(errors.length > 0) {
-        res.render("signup", {errors})
+        res.render("index", {errors})
       }
     }
 
     if(errors.length > 0) {
-        res.render("signup", {errors})
+        res.render("index", {errors})
     } else {
         const passMatch = await bcrypt.compare(password, user.password);
 
         if (!passMatch) {
             errors.push("Incorrect email or password");
             if(errors.length > 0) {
-                res.render("signup", {errors})
+                res.render("index", {errors})
             }
         }
 
@@ -132,7 +132,7 @@ app.post("/", async (req, res) => {
     console.error(err.message);
     errors.push("Email or password is not valid");
     if(errors.length > 0) {
-        res.render("signup", {errors})
+        res.render("index", {errors})
     }
   }
 });
