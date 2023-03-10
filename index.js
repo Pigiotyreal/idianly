@@ -12,6 +12,10 @@ app.get("/signup", (req, res) => {
     res.render("signup")
 })
 
+app.get("/app", (req, res) => {
+    res.render("app")
+})
+
 app.listen(port, () => {
     console.log(`Now listening on port ${port}!`)
 })
