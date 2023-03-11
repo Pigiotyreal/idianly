@@ -14,7 +14,7 @@ app.use(bodyParser.urlencoded({extended: true}))
 app.use(session({
   secret: process.env.SECRET_KEY,
   resave: false,
-  saveUninitialized: true
+  saveUninitialized: true,
 }))
 
 const initializeDatabase = () => {
@@ -68,6 +68,7 @@ app.get("/app", (req, res) => {
 app.post('/signup', async (req, res) => {
   const {username, email, password} = req.body
   const hashedPass = await bcrypt.hash(password, 10)
+  const rememberMe = req.body.rememberMe === "on"
 
   const errors = []
   if(!username) {
@@ -104,8 +105,16 @@ app.post('/signup', async (req, res) => {
         })
       })
 
-      req.session.username = username
-      res.redirect("/app")
+      if(rememberMe) {
+        req.session.regenerate(() => {
+          req.session.username = user.username
+          res.cookie("username", user.username, {maxAge: 30 * 24 * 60 * 60 * 1000}) //30d
+          res.redirect("/app")
+        })
+      } else {
+        req.session.username = user.username
+        res.redirect("/app")
+      }
     }
   } catch(err) {
     console.error(err)
@@ -115,6 +124,7 @@ app.post('/signup', async (req, res) => {
 
 app.post("/", async (req, res) => {
   const {email, password} = req.body
+  const rememberMe = req.body.rememberMe === "on"
 
   const errors = []
   if(!email) {
@@ -141,8 +151,16 @@ app.post("/", async (req, res) => {
       const passMatch = await bcrypt.compare(password, user.password)
     
       if(passMatch) {
-        req.session.username = user.username
-        res.redirect("/app")
+        if(rememberMe) {
+          req.session.regenerate(() => {
+            req.session.username = user.username
+            res.cookie("username", user.username, {maxAge: 30 * 24 * 60 * 60 * 1000}) //30d
+            res.redirect("/app")
+          })
+        } else {
+          req.session.username = user.username
+          res.redirect("/app")
+        }
       } else {
         res.render("index", {errors: ["Invalid email or password"]})
       }
