@@ -112,9 +112,13 @@ app.post('/signup', async (req, res) => {
   }
 })
 
+const loginAttempts = {}
+
 app.post("/", async (req, res) => {
   const {email, password} = req.body
   const rememberMe = req.body.rememberMe === "on"
+  const maxAttempts = 5
+  const loginTime = 5 * 60 * 1000 //5 mins
 
   const errors = []
   if(!email) {
@@ -125,35 +129,51 @@ app.post("/", async (req, res) => {
   }
 
   try {
-    const user = await new Promise((resolve, reject) => {
-      db.get("SELECT * FROM users WHERE email = ?", email, (err, row) => {
-        if(err) {
-          reject(err)
-        } else {
-          resolve(row)
-        }
-      })
-    })
-
-    if(!user) {
-      res.render("index", {errors: ["Invalid email or password"]})
+    const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress
+    if(loginAttempts[ip] && loginAttempts[ip].attempts >= maxAttempts && (new Date() - loginAttempts[ip].time) < loginTime) { //5 attempts per 5 minutes
+      errors.push("Too many login attempts, try again later")
     } else {
-      const passMatch = await bcrypt.compare(password, user.password)
-    
-      if(passMatch) {
-        if(rememberMe) {
-          req.session.regenerate(() => {
-            req.session.username = user.username
-            res.cookie("username", user.username, {maxAge: 30 * 24 * 60 * 60 * 1000}) //30d
-            res.redirect("/app")
-          })
-        } else {
-          req.session.username = user.username
-          res.redirect("/app")
-        }
+      const user = await new Promise((resolve, reject) => {
+        db.get("SELECT * FROM users WHERE email = ?", email, (err, row) => {
+          if(err) {
+            reject(err)
+          } else {
+            resolve(row)
+          }
+        })
+      })
+
+      if(!user) {
+        errors.push("Invalid email or password")
       } else {
-        res.render("index", {errors: ["Invalid email or password"]})
+        const passMatch = await bcrypt.compare(password, user.password)
+
+        if(passMatch) {
+          if(rememberMe) {
+            req.session.regenerate(() => {
+              req.session.username = user.username
+              res.cookie("username", user.username, {maxAge: 30 * 24 * 60 * 60 * 1000}) //30d
+              res.redirect("/app")
+            })
+          } else {
+            req.session.username = user.username
+            res.redirect("/app")
+          }
+        } else {
+          errors.push("Invalid email or password")
+        }
       }
+
+      if (!loginAttempts[ip]) {
+        loginAttempts[ip] = { attempts: 1, time: new Date() }
+      } else {
+        loginAttempts[ip].attempts++
+        loginAttempts[ip].time = new Date()
+      }
+    }
+
+    if(errors.length > 0) {
+      res.render("index", {errors})
     }
   } catch(err) {
     console.error(err)
