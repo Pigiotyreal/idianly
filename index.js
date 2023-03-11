@@ -17,13 +17,19 @@ app.use(session({
   saveUninitialized: true
 }));
 
-const initializeDatabase = async () => {
-  try {
-    await db.run("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, email TEXT UNIQUE, password TEXT)");
-    console.log("Connected to the database!");
-  } catch (err) {
-    console.error(err.message);
-  }
+const initializeDatabase = () => {
+  return new Promise((resolve, reject) => {
+    db.serialize(() => {
+      db.run("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, email TEXT UNIQUE, password TEXT)", (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          console.log("Connected to the database!");
+          resolve();
+        }
+      });
+    });
+  });
 };
 
 initializeDatabase();
@@ -58,83 +64,13 @@ app.get("/app", (req, res) => {
 });
 
 app.post('/signup', async (req, res) => {
-  const { username, email, password } = req.body;
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  const uppercaseRegex = /[A-Z]/
-  const numberRegex = /[0-9]/
-  const usernameRegex = /^[a-zA-Z0-9_-]{3,32}$/
-  const errors = []
-  const saltRounds = 10
-
-  if(!usernameRegex.test(username)) {
-    errors.push("Username is invalid, must be 3-32 characters in length and can only use letters, numbers, hypens, and underscores")
-  }
-
-  if(!emailRegex.test(email) || email.length < 8 || email.length > 50) {
-    errors.push("Email is invalid, must be 8-50 characters in length")
-  }
-
-  if(!uppercaseRegex.test(password) || !numberRegex.test(password) || password.length < 6 || password.length > 72) {
-    errors.push("Password is invalid, you need at least one uppercase letter and one number")
-  }
-
-  if(errors.length > 0) {
-    res.render("signup", {errors})
-  } else {
-    try {
-        const salt = await bcrypt.genSalt(saltRounds);
-        const hashedPassword = await bcrypt.hash(password, salt);
-    
-        await db.run('INSERT INTO users (username, email, password) VALUES (?, ?, ?)', [username, email, hashedPassword]);
-    
-        res.send('User created successfully');
-      } catch (error) {
-        errors.push("Error hasing password")
-
-        if(errors.length > 0) {
-            res.render("signup", {errors})
-        }
-    }
-  }
+  
 });
 
 app.post("/", async (req, res) => {
-  const { email, password } = req.body;
-  const errors = []
-
-  try {
-    const user = await db.get("SELECT * FROM users WHERE email = ?", [email]);
-
-    if (!user) {
-      errors.push("Incorrect email or password");
-      if(errors.length > 0) {
-        res.render("index", {errors})
-      }
-    }
-
-    if(errors.length > 0) {
-        res.render("index", {errors})
-    } else {
-        const passMatch = await bcrypt.compare(password, user.password);
-
-        if (!passMatch) {
-            errors.push("Incorrect email or password");
-            if(errors.length > 0) {
-                res.render("index", {errors})
-            }
-        }
-
-        req.session.username = user.username;
-        res.redirect("/app");
-    }
-  } catch (err) {
-    errors.push("Email or password is not valid");
-    if(errors.length > 0) {
-        res.render("index", {errors})
-    }
-  }
+  
 });
 
-app.listen(port, () => {
+app.listen(port, async () => {
   console.log(`Now listening on port ${port}!`);
 });
