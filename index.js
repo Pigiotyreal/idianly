@@ -68,7 +68,6 @@ app.get("/app", (req, res) => {
 app.post('/signup', async (req, res) => {
   const {username, email, password} = req.body
   const hashedPass = await bcrypt.hash(password, 10)
-  const rememberMe = req.body.rememberMe === "on"
 
   const errors = []
   if(!username) {
@@ -95,8 +94,8 @@ app.post('/signup', async (req, res) => {
     if(existingUser) {
       res.render("signup", {errors: ["User already exists"]})
     } else {
-      const newUser = await new Promise((resolve, reject) => {
-        db.run("INSERT INTO users (username, email, password) VALUES (?, ?, ?)", [username, email, hashedPass], function(err) {
+      const user = await new Promise((resolve, reject) => {
+        db.run("INSERT INTO users (username, email, password, admin) VALUES (?, ?, ?, ?)", [username, email, hashedPass, 0], function(err) {
           if(err) {
             reject(err)
           } else {
@@ -105,16 +104,7 @@ app.post('/signup', async (req, res) => {
         })
       })
 
-      if(rememberMe) {
-        req.session.regenerate(() => {
-          req.session.username = user.username
-          res.cookie("username", user.username, {maxAge: 30 * 24 * 60 * 60 * 1000}) //30d
-          res.redirect("/app")
-        })
-      } else {
-        req.session.username = user.username
-        res.redirect("/app")
-      }
+      res.redirect("/")
     }
   } catch(err) {
     console.error(err)
