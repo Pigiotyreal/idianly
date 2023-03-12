@@ -1,2 +1,2 @@
 # idianly
-A work in progress social media application
+A work in progress chat application platform
