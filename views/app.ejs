@@ -39,7 +39,7 @@
                         <a class="nav-link active py-2" href="#">Friends</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link py-2" href="#">Add Friend</a>
+                        <a class="nav-link py-2" href="#" data-bs-toggle="modal" data-bs-target="#friendModal">Add Friend</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link py-2" href="#">Communities</a>
@@ -50,6 +50,24 @@
                 </ul>
             </div>
         </nav>
+
+        <div class="modal fade" id="friendModal" tabindex="-1" aria-labelledby="friendModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+              <div class="modal-content bg-dark">
+                <div class="modal-header">
+                  <h5 class="modal-title text-light" id="friendModalLabel">Add Friend</h5>
+                  <button type="button" class="btn-close text-light" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control" id="frienduser" name="frienduser" placeholder="Friends Username">
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                  <button type="button" class="btn btn-primary">Add Friend</button>
+                </div>
+              </div>
+            </div>
+          </div>
 
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4" style="background-color: #1D1D1D;">
             <section class="text-light vh-100">
