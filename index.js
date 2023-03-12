@@ -51,9 +51,18 @@ const renderTemplate = (template, data = {}) => (req, res) => {
   res.render(template, { ...data, username })
 }
 
-app.get("/", renderTemplate("index"))
+const requireLogin = (req, res, next) => {
+  if (req.session.username) {
+    res.redirect('/app')
+  } else {
+    next()
+  }
+}
 
-app.get("/signup", renderTemplate("signup"))
+
+app.get("/", requireLogin, renderTemplate("index"))
+
+app.get("/signup", requireLogin, renderTemplate("signup"))
 
 app.get("/app", (req, res) => {
   const {username} = req.session
